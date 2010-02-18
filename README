@@ -1,0 +1,15 @@
+Multimedia-related scripts -- use at your own risk :-)
+
+To install them, just type:
+
+    make install
+
+By default, scripts are installed in the current user's home directory,
+with prefix at ~/.local (so make sure you have ~/.local/bin in your $PATH).
+You can change the behaviour when invoking the make:
+
+    make install PREFIX=/usr DESTDIR=/tmp/foo/
+
+Note that DESTDIR is optional, and only needed if you want to further
+package things e.g. in a .deb or .rpm package.
+
