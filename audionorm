@@ -18,7 +18,7 @@ normalize-all ()
 {
 	local file current=0
 	for file in "$@" ; do
-		printf "[1;1m%02i/%02i[1;33m " "$((current++))" "$#"
+		printf "[1;1m%02i/%02i[1;33m " "$((++current))" "$#"
 		case ${file} in
 			*.[oO][gG][aAgG]) printf "[ogg][0;0m " ; normalize-vorbis "${file}" ;;
 			*.[mM][pP]3     ) printf "[mp3][0;0m " ; normalize-mp3    "${file}" ;;
