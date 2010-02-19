@@ -21,7 +21,7 @@ endif
 define install-bin-t
 install: $$(dest_bindir)/$1
 $$(dest_bindir)/$1: $1
-	$(echo) " [1;33m*[1;32m install-bin [0;0m $$@"
+	$(echo) " [1;32m*[0;0m install-bin [1;33m $$@[0;0m"
 	mkdir -p $$(dir $$@)
 	cp $$< $$@
 	chmod +x $$@
