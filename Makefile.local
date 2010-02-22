@@ -1,3 +1,5 @@
 
-INSTALL_BIN := audionorm
+INSTALL_BIN := \
+	audionorm \
+	ffcut
 

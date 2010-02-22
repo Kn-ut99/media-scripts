@@ -1,0 +1,29 @@
+#! /bin/bash
+set -e
+
+if [[ $# -lt 3 || $# -gt 4 ]] ; then
+	echo "Usage: $0 input output start [length]"
+	echo
+	echo "  input  - Any media file supported by ffmpeg"
+	echo "  output - Destination file"
+	echo "  start  - Start time in HH:MM:SS"
+	echo "  length - End time in HH:MM:SS"
+	echo
+	exit 1
+fi >&2
+
+
+flags=( -loglevel quiet
+        -acodec copy
+        -vcodec copy
+        -scodec copy
+        -ss "$3"
+        -y )
+
+if [[ $# -eq 4 ]] ; then
+	flags=( "${flags[@]}" -t "$4" )
+fi
+
+flags=( "${flags[@]}" -i "$1" "$2" )
+
+exec ffmpeg "${flags[@]}"
