@@ -1,0 +1,60 @@
+=encoding utf8
+
+=head1 NAME
+
+ffcut - Extract parts of media files without reencoding them.
+
+
+=head1 SYNOPSIS
+
+B<ffcut> B<input> B<output> B<starttime> [B<duration>]
+
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<input>
+
+Input file name. Any media format supported by I<ffmpeg> may be used.
+
+=item B<output>
+
+Output file name. For best results, use the file name extension for the
+same container format as the input, but nothing prevents re-muxing to
+a different container format, though.
+
+=item B<starttime>
+
+Time at which start extracting media, in I<HH:MM:SS> format.
+
+=item B<duration>
+
+Duration of the extracted snippet, in I<HH:MM:SS> format. If not given,
+extraction will go until the end of input file is reached.
+
+=back
+
+=head1 DESCRIPTION
+
+B<ffcut> will extract a segment if an B<input> media file supported by
+I<ffmpeg> and remux it into the B<output> file. The segment will start at
+position B<starttime> and will span for the given B<duration> or, if
+duration is not specified, up to the end of the input.
+
+
+=head1 RETURN VALUE
+
+B<ffcut> returns the exit status 0 on success. More specifically, return
+statuses are the same as for I<ffmpeg>.
+
+
+=head1 SEE ALSO
+
+L<ffmpeg>
+
+
+=head1 AUTHORS
+
+Adrian Perez E<lt>aperez@igalia.comE<gt>
+
