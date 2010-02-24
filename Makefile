@@ -8,8 +8,10 @@ include Makefile.local
 DESTDIR ?=
 PREFIX  ?= ~/.local
 bindir   = $(PREFIX)/bin
+mandir   = $(PREFIX)/share/man
 
 dest_bindir = $(DESTDIR)$(bindir)
+dest_mandir = $(DESTDIR)$(mandir)
 
 ifneq ($(strip $V),1)
   MAKEFLAGS += s
@@ -29,6 +31,15 @@ endef
 
 all:
 	@echo "Maybe you wanted to say 'make install'..."
+
+
+all_man = $(INSTALL_MAN1)
+
+man: $(all_man)
+
+%.1: %.pod
+	$(echo) " [1;32m*[0;0m pod2man     [1;33m $@[0;0m"
+	pod2man --section=1 --center="User Commands" --release="Media scripts" $< $@
 
 install:
 

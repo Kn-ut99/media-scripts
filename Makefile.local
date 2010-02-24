@@ -3,3 +3,6 @@ INSTALL_BIN := \
 	audionorm \
 	ffcut
 
+INSTALL_MAN1 := \
+	$(patsubst %,%.1,$(INSTALL_BIN))
+
