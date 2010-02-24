@@ -1,0 +1,47 @@
+=encoding utf8
+
+=head1 SYNOPSIS
+
+B<audionorm> [B<files...>]
+
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<files>
+
+Input files to normalize. Can be OGG Vorbis (extensions I<.ogg> and I<.oga>)
+or MPEG-1 Layer-3 audio (extension I<.mp3>). If not specified, all OGG and
+MP3 files from the working directory will be normalized.
+
+=back
+
+
+=head1 DESCRIPTION
+
+B<audionorm> will scan OGG Vorbis and MPEG-1 Layer-3 (MP3) audio files, find
+the peak music level and add tags with recommended gain information in the
+header so audio players can produce a normalized output. This is used to
+avoid differences in playback volume levels, which is specially annoying
+when changing from one song to another.
+
+Scanned files will be modified in-place. This is not a problem since the
+changes made can be reverted in a non-destructive way. Note that audio data
+is I<never> re-encoded.
+
+
+=head1 RETURN VALUE
+
+B<audionorm> returns the exit status 0 on success.
+
+
+=head1 SEE ALSO
+
+L<mp3gain>, L<vorbisgain>
+
+
+=head1 AUTHORS
+
+Adrian Perez E<lt>aperez@igalia.comE<gt>
+
