@@ -29,6 +29,14 @@ $$(dest_bindir)/$1: $1
 	chmod +x $$@
 endef
 
+define install-man-t
+install: $$(dest_mandir)/man$1/$2
+$$(dest_mandir)/man$1/$2: $2
+	$(echo) " [1;32m*[0;0m install-man [1;33m $$@[0;0m"
+	mkdir -p $$(dir $$@)
+	cp $$< $$@
+endef
+
 all:
 	@echo "Maybe you wanted to say 'make install'..."
 
@@ -41,9 +49,14 @@ man: $(all_man)
 	$(echo) " [1;32m*[0;0m pod2man     [1;33m $@[0;0m"
 	pod2man --section=1 --center="User Commands" --release="Media scripts" $< $@
 
+%.gz: %
+	$(echo) " [1;32m*[0;0m gzip --best [1;33m $@[0;0m"
+	gzip --best -c $< > $@
+
 install:
 
 $(foreach X,$(INSTALL_BIN),$(eval $(call install-bin-t,$X)))
+$(foreach X,$(INSTALL_MAN1),$(eval $(call install-man-t,1,$X)))
 
 # vim:ft=make
 #
