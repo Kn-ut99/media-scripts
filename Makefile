@@ -37,8 +37,7 @@ $$(dest_mandir)/man$1/$2: $2
 	cp $$< $$@
 endef
 
-all:
-	@echo "Maybe you wanted to say 'make install'..."
+all: man
 
 
 all_man = $(INSTALL_MAN1)
@@ -55,9 +54,16 @@ man: $(all_man)
 
 install:
 
+clean:
+	$(echo) " [1;32m*[0;0m clean"
+	$(RM) $(patsubst %.gz,%,$(all_man))
+	$(RM) $(all_man)
+
 $(foreach X,$(INSTALL_BIN),$(eval $(call install-bin-t,$X)))
 $(foreach X,$(INSTALL_MAN1),$(eval $(call install-man-t,1,$X)))
 
+
+.PHONY: clean all man install
+
 # vim:ft=make
 #
-
