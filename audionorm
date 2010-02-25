@@ -28,5 +28,6 @@ normalize-all ()
 }
 
 [[ $# -eq 0 ]] && set -- *.[mM][pP]3 *.[oO][gG][gGaA]
-normalize-all "$@" | grep -vE '^(No changes to|Applying mp3 gain change of)'
+normalize-all "$@" \
+	| grep -vE '^(No changes to|Applying mp3 gain change of|\.\.\.but tag needs update)'
 
