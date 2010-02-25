@@ -62,7 +62,7 @@ clean:
 $(foreach X,$(INSTALL_BIN),$(eval $(call install-bin-t,$X)))
 $(foreach X,$(INSTALL_MAN1),$(eval $(call install-man-t,1,$X)))
 
-
+.PRECIOUS: %.1
 .PHONY: clean all man install
 
 # vim:ft=make
