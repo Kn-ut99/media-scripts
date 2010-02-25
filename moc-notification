@@ -6,7 +6,6 @@ moc-gather-info ()
 	local key val
 	while read -r key val ; do
 		eval "Moc${key%:}='${val}'"
-		echo "${key} ${val}"
 	done < <( mocp --info )
 }
 
