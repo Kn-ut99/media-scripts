@@ -1,0 +1,31 @@
+=encoding utf8
+
+=head1 SYNOPSIS
+
+B<moc-notification>
+
+
+=head1 DESCRIPTION
+
+Queries the MOC audio player and pops up a notification message using
+I<notification-daemon> which informs about the status (playing or paused),
+the title, the artist and album of the current song.
+
+The program takes no arguments.
+
+
+=head1 RETURN VALUE
+
+B<moc-notification> return 0 on success.
+
+
+=head1 SEE ALSO
+
+L<mocp>, L<notify-send>
+
+
+=head1 AUTHORS
+
+Adrian Perez E<lt>aperez@igalia.comE<gt>
+
+

@@ -1,0 +1,26 @@
+#! /bin/bash
+set -e
+
+moc-gather-info ()
+{
+	local key val
+	while read -r key val ; do
+		eval "Moc${key%:}='${val}'"
+		echo "${key} ${val}"
+	done < <( mocp --info )
+}
+
+moc-gather-info
+
+case ${MocState} in
+	PAUSE) stat=Playing ;;
+	PLAY ) stat=Paused ;;
+	*    ) exit 0 ;;
+esac
+
+exec notify-send              \
+	--expire-time=5000          \
+	--icon=gnome-volume-control \
+	"${stat}: ${MocSongTitle}"  \
+	"From <b>${MocAlbum}</b> by <b>${MocArtist}</b>"
+

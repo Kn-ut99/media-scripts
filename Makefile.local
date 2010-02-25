@@ -2,6 +2,7 @@
 INSTALL_BIN := \
 	audionorm \
 	ffcut \
+	moc-notification \
 	mtsremux
 
 INSTALL_MAN1 := \
