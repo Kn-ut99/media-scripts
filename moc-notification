@@ -12,8 +12,8 @@ moc-gather-info ()
 moc-gather-info
 
 case ${MocState} in
-	PAUSE) stat=Playing ;;
-	PLAY ) stat=Paused ;;
+	PAUSE) stat=Paused ;;
+	PLAY ) stat=Playing ;;
 	*    ) exit 0 ;;
 esac
 
