@@ -1,7 +1,8 @@
 
 INSTALL_BIN := \
 	audionorm \
-	ffcut
+	ffcut \
+	mtsremux
 
 INSTALL_MAN1 := \
 	$(patsubst %,%.1.gz,$(INSTALL_BIN))

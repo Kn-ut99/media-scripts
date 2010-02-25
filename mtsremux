@@ -1,0 +1,23 @@
+#! /bin/bash
+set -e
+
+if [[ $# -lt 2 ]] ; then
+	echo "Usage: $0 input.mts [moreinputs.mts ...] output.ts" >&2
+	exit 1
+fi
+
+inputs=( -i "$1" )
+
+shift
+while [[ $# -gt 1 ]] ; do
+	inputs=( "${inputs[@]}" -i "$1" )
+	shift
+done
+
+exec ffmpeg "${inputs[@]}" \
+            -loglevel quiet \
+            -vcodec copy     \
+            -acodec copy      \
+            -scodec copy       \
+            -y -f mpegts "$1"
+
