@@ -23,7 +23,7 @@ normalize-all ()
 			*.[oO][gG][aAgG]) printf "[ogg][0;0m " ; normalize-vorbis "${file}" ;;
 			*.[mM][pP]3     ) printf "[mp3][0;0m " ; normalize-mp3    "${file}" ;;
 			*               ) printf "[   ][0;0m ${file}\n" ;;
-		esac
+		esac || true
 	done
 }
 
