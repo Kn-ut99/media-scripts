@@ -1,0 +1,20 @@
+#! /usr/bin/env python
+
+import re, sys
+
+# Recipe:
+#
+# http://lists.mplayerhq.hu/pipermail/ffmpeg-user/2009-March/019851.html
+
+def fix_file(path):
+    vf = file(path, "r+")
+    nh = re.sub("\x64\x00[\x00-\x99]", "\x64\x00\x29", vf.read(1024))
+    vf.seek(0)
+    vf.write(nh)
+    vf.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        raise SystemExit("Usage: %s file1.h264 [files...]" % sys.argv[0])
+    [fix_file(path) for path in sys.argv[1:]]
+

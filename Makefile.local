@@ -3,6 +3,7 @@ INSTALL_BIN := \
 	audionorm \
 	ffcut \
 	moc-notification \
+	h264level41 \
 	mtsremux
 
 INSTALL_MAN1 := \
