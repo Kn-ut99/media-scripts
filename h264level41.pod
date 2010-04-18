@@ -1,0 +1,42 @@
+=encoding utf8
+
+=head1 SYNOPSIS
+
+h264level41 - Sets profile level of H.264 streams to version 4.1
+
+
+=head1 OPTIONS AND ARGUMENTS
+
+B<h264level41> B<file.h264> [B<file.h264>...]
+
+
+=over 8
+
+=item B<file.h264>
+
+Raw H.264 stream. Will be modified in-place.
+
+=back
+
+
+=head1 DESCRIPTION
+
+B<h264level41> modifies the headers in a H.264 video stream so its profile
+version is set to the 4.1 version. This is needed for some players to do
+proper playback of media files. The most recent version of the AVC/H.264
+profiles is 5.1, but its frame sizes and bit rates are so high that almost
+no hardware or software player is able of handling them, so players refuse
+to play streams which contain versions newer than 4.1, like the PlayStation
+3 does.
+
+If you have craeated some file in H.264 without specifying profile version
+4.1, but it is 1920x1080p or smaller, you can run B<h264level41> in it to
+tweak the header back to version 4.1. This is harmless to the video itself
+because the version tag is only informational.
+
+
+=head1 AUTHORS
+
+Adrian Perez E<lt>aperez@igalia.comE<gt>
+
+
