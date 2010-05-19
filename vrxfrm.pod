@@ -1,0 +1,31 @@
+=encoding utf8
+
+=head1 SYNOPSIS
+
+vrxfrm - Reencode and transform media files.
+
+
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item 
+
+=back
+
+
+=head1 DESCRIPTION
+
+
+=head1 RETURN VALUE
+
+
+=head1 SEE ALSO
+
+
+=head1 AUTHORS
+
+Adrian Perez E<lt>aperez@igalia.comE<gt>
+
+

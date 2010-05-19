@@ -4,7 +4,7 @@ INSTALL_BIN := \
 	ffcut \
 	moc-notification \
 	h264level41 \
-	mtsremux
+	vrxfrm
 
 INSTALL_MAN1 := \
 	$(patsubst %,%.1.gz,$(INSTALL_BIN))

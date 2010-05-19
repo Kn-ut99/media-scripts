@@ -1,0 +1,533 @@
+#! /bin/bash
+# vim: tabstop=4 shiftwidth=4
+set -e
+
+# Constants -- and mark then as read-only
+#
+__vr_version='0.1'
+__vr_dollar_zero=$0
+__vr_full_path=$(dirname "$0")
+
+pushd "${__vr_full_path}" > /dev/null
+__vr_full_path=$(pwd)
+popd > /dev/null
+
+__vr_progname=${__vr_dollar_zero##*/}
+__vr_full_path="${__vr_full_path}/${__vr_progname}"
+
+declare -r __vr_dollar_zero \
+           __vr_full_path   \
+           __vr_progname    \
+           __vr_version
+
+
+has_tool ()
+{
+	type -P "$1" > /dev/null
+}
+
+
+die ()
+{
+	if [[ $# -gt 0 ]] ; then
+		echo "$*"
+	fi
+	exit ${retcode:-1}
+} >&2
+
+
+die_with_help ()
+{
+	if [[ ${#a_inputs[@]} -gt 0 ]]
+	then
+		local helpvar="vr_${a_inputs[0]}_help"
+		if [ "${!helpvar}" ]
+		then
+			printf "Usage: ${__vr_progname} "
+			echo "${a_inputs[0]} ${!helpvar}"
+		else
+			die "No such action '${a_inputs[0]}'"
+		fi
+	else
+		printf "Usage: ${__vr_progname} "
+		echo "action [arguments...]"
+		echo
+		echo "Available actions (hint: use 'help action'):"
+		echo
+		local varname
+		for varname in "${!vr_@}"
+		do
+			if [[ ${varname} = *_help ]]
+			then
+				varname=${varname%_help}
+				varname=${varname#vr_}
+				echo " - ${varname}"
+			fi
+		done
+		echo
+	fi
+	die "$@"
+} >&2
+
+
+a_inputs=( )
+a_switches=( )
+a_flag_names=( )
+a_flag_values=( )
+a_action='preset'
+
+
+__vr_flag_del ()
+{
+	local -i i l=${#a_flag_names[@]}
+
+	for (( i = 0 ; i < l ; i++ ))
+	do
+		if [[ ${a_flag_names[$i]} = $1 ]]
+		then
+			unset a_flag_names[$i] a_flag_values[$i]
+			return
+		fi
+	done
+}
+
+
+__vr_flag_add ()
+{
+	__vr_flag_del "$1"
+	a_flag_names=( "${a_flag_names[@]}" "$1" )
+	a_flag_values=( "${a_flag_values[@]}" "$2" )
+}
+
+
+__vr_flag ()
+{
+	local -i i l=${#a_flag_names[@]}
+
+	for (( i = 0 ; i < l ; i++ ))
+	do
+		if [[ ${a_flag_names[$i]} = $1 ]]
+		then
+			echo "${a_flag_values[$i]}"
+			return
+		fi
+	done
+}
+
+
+__vr_switch_del ()
+{
+	local val
+	local -a result
+
+	for val in "${a_switches[@]}"
+	do
+		[[ ${val} = $1 ]] || result=( "${result[@]}" "${val}" )
+	done
+
+	a_switches=( "${result[@]}" )
+}
+
+
+__vr_switch_add ()
+{
+	__vr_switch_del "$1"
+	a_switches=( "${a_switches[@]}" "$1" )
+}
+
+
+__vr_switch ()
+{
+	local flag
+
+	for flag in "${a_switches[@]}"
+	do
+		[[ ${flag} = $1 ]] && return 0
+	done
+	return 1
+}
+
+
+vr_parse_args ()
+{
+	# Get action name
+	[[ $# -gt 0 ]] || die_with_help "No action specified"
+	a_action=$1
+	shift
+
+	# Detect --help/-h
+	if [[ ${a_action} = --help || ${a_action} = -h ]] ; then
+		a_action='help'
+	fi
+
+	local tmp
+	while [[ $# -gt 0 ]]
+	do
+		case $1 in
+			--*=*)
+				tmp=${1#--}
+				__vr_flag_add "${tmp%%=*}" "${tmp#*=}"
+				;;
+			--*)
+				__vr_switch_add "${1#--}"
+				;;
+			*)
+				a_inputs=( "${a_inputs[@]}" "$1" )
+				;;
+		esac
+		shift
+	done
+}
+
+
+__vr_load_preset ()
+{
+	:
+}
+
+
+vr_version_help=$'\n
+Shows the version of vrxfrm and exits'
+
+vr_version_action ()
+{
+	echo "vrxfrm version ${__vr_version}"
+}
+
+
+vr_help_help=$'[command]\n
+Shows a list of command or help about a particular action'
+
+vr_help_action ()
+{
+	retcode=0 die_with_help
+}
+
+
+__ffmpeg ()
+{
+	local rc
+	set -x
+	ffmpeg -loglevel quiet "$@" ; rc=$?
+	set +x
+	return ${rc}
+}
+
+
+__vrxfrm ()
+{
+	local rc
+	set -x
+	"${__vr_full_path}" "$@" ; rc=$?
+	set +x
+	return ${rc}
+}
+
+
+__MP4Box ()
+{
+	local rc
+	set -x
+	MP4Box "$@" ; rc=$?
+	set +x
+	return ${rc}
+}
+
+
+vr_xaudio_help=$'[--track=NUM] [--reencode] (input | -) (output | -) [ffmpeg-args]\n
+Extracts an audio track from a media file'
+
+vr_xaudio_action ()
+{
+	local input=$1 output=$2
+	local aid=$(__vr_flag track)
+	local cmdline=( -i "${input}" -vn -sn )
+	shift 2
+
+	if ! __vr_switch reencode ; then
+		cmdline=( "${cmdline[@]}" -acodec copy )
+	fi
+	if [[ $# -gt 0 ]] ; then
+		cmdline=( "${cmdline[@]}" "$@" )
+	fi
+	if [ "${aid}" ] ; then
+		cmdline=( "${cmdline[@]}" -aid "${aid}" )
+	fi
+
+	cmdline=( "${cmdline[@]}" -y "${output}" )
+
+	__ffmpeg "${cmdline[@]}"
+}
+
+
+vr_xvideo_help=$'[--track=NUM] [--reencode] (input | -) (output | -) [ffmpeg-args]\n
+Extracts a video track from a media file'
+
+vr_xvideo_action ()
+{
+	local input=$1 output=$2
+	local vid=$(__vr_flag track)
+	local cmdline=( -i "${input}" -an -sn )
+	shift 2
+
+	if ! __vr_switch reencode ; then
+		cmdline=( "${cmdline[@]}" -vcodec copy )
+	fi
+	if [[ $# -gt 0 ]] ; then
+		cmdline=( "${cmdline[@]}" "$@" )
+	fi
+	if [ "${vid}" ] ; then
+		cmdline=( "${cmdline[@]}" -vid "${vid}" )
+	fi
+
+	cmdline=( "${cmdline[@]}" -y "${output}" )
+
+	__ffmpeg "${cmdline[@]}"
+}
+
+
+vr_xsub_help=$'[--track=NUM] [--reencode] (input | -) (output | -) [ffmpeg-args]\n
+Extracts a subtitle track from a media file'
+
+vr_xsub_action ()
+{
+	local input=$1 output=$2
+	local sid=$(__vr_flag track)
+	local cmdline=( -i "${input}" -an -vn )
+	shift 2
+
+	if ! __vr_switch reencode ; then
+		cmdline=( "${cmdline[@]}" -scodec copy )
+	fi
+	if [[ $# -gt 0 ]] ; then
+		cmdline=( "${cmdline[@]}" "$@" )
+	fi
+	if [ "${sid}" ] ; then
+		cmdline=( "${cmdline[@]}" -sid "${sid}" )
+	fi
+
+	cmdline=( "${cmdline[@]}" -y "${output}" )
+
+	__ffmpeg "${cmdline[@]}"
+}
+
+
+vr_audionorm_help=$'(input | -) (output | -)\n
+Normalizes audio, input should be in .wav format, output will always be
+in .wav format in CD quality (44.100 Hz, 16-bit, Stereo)'
+
+vr_audionorm_action ()
+{
+	set -x
+	sox -S --norm -t wav "$1" -b 16 -t wav "$2" rate 44100 dither -s
+	set +x
+}
+
+
+vr_convert_help=$'[flags...] input output
+
+Available flags:
+
+  --video-track=NUM      Choose video track
+  --audio-track=NUM      Choose audio track
+  --subtitle-track=NUM   Choose subtitle track
+  --preset=NAME          Choose preset name
+  --normalize-audio      Normalize audio stream
+  --size=WxH             Set output frame size
+'
+
+
+__vr_ext2ffflag ()
+{
+	case ${1##*.} in
+		wav | mp3 | aac | ogg | ac3 | au | aif | aiff ) echo a ;;
+		srt | sub | ass | ssa | idx | ttxt            ) echo s ;;
+		*                                             ) echo v ;;
+	esac
+}
+
+
+__vr_merge_ffmpeg ()
+{
+	local lang arg output=$1
+	local -a ffargs=( -scodec copy -vcodec copy -acodec copy )
+	shift
+
+	for arg in "$@" ; do
+		lang=${arg##*:}
+
+		if [[ ${lang} != ${arg} ]] ; then
+			arg=${arg%:*}
+		else
+			lang=''
+		fi
+
+		ffargs=( "${ffargs[@]}" -i "${arg}" )
+
+		if [ "${lang}" ] ; then
+			ffargs=( "${ffargs[@]}" -$(__vr_ext2ffflag "${arg}")lang "${lang}" )
+		fi
+	done
+	__ffmpeg "${ffargs[@]}" -y "${output}"
+}
+
+
+__vr_merge_mp4 ()
+{
+	if ! has_tool MP4Box ; then
+		echo 'warning: MP4Box not found, falling back to ffmpeg' >&2
+		__vr_merge_ffmpeg "$@"
+		return $?
+	fi
+
+	local lang arg output=$1
+	local -a boxargs=( )
+	shift
+
+	for arg in "$@" ; do
+		lang=${arg##*:}
+
+		if [[ ${lang} != ${arg} ]] ; then
+			lang=":lang=${lang}"
+			arg=${arg%:*}
+		else
+			lang=''
+		fi
+
+		boxargs=( "${boxargs[@]}" -add "${arg}${lang}" )
+	done
+	__MP4Box "${boxargs[@]}" -new "${output}"
+}
+
+
+vr_merge_help=$'input[:lang] [input[:lang] ...] output.ext
+Merges several tracks into a single media file.
+
+The ISO language code can be specified for each individual media file,
+by specifying it after a colon. This information will be added to the
+output file if supported by the container.
+
+The format of the container is detected using the extension of the
+output file, and the most suitable tool for merging the tracks into
+the output file format will be used.'
+
+vr_merge_action ()
+{
+	local -a inputs=( "$@" )
+	local x
+
+	x=${#inputs[@]}
+	(( x-- ))
+
+	local output=${inputs[$x]}
+	unset inputs[$x]
+
+	x=${output##*.}
+
+	[[ $(type -t "__vr_merge_${x}") = function ]] || x='ffmpeg'
+	"__vr_merge_${x}" "${output}" "${inputs[@]}"
+}
+
+
+vr_convert_action ()
+{
+	local input=$1
+	local output=$2
+	local vo_fifo="/tmp/${__vr_progname}-$$-${RANDOM}.yuv"
+	local cmdline=''
+	local preset=''
+	local vo_pid=''
+	local tmp1=''
+	local tmp2=''
+	local tmp=''
+	shift 2
+
+	local -a cmdline=( )
+	local -a inputs=( )
+
+
+	if __vr_switch normalize-audio
+	then
+		# This case uses a temporary file for normalizing the audio into
+		# a .wav file (sox seeks over it when processing, so we cannot pipe
+		# it -- in theory should work, but in practive does not), then we
+		# get the video from a FIFO (vo_fifo) and mux the input from it and
+		# the audio result of the normalization.
+
+		tmp1="/tmp/${__vr_progname}-$$-${RANDOM}.1.wav"
+		tmp2="/tmp/${__vr_progname}-$$-${RANDOM}.1.wav"
+		__vrxfrm xaudio "${orig_input}" "${tmp1}"
+		__vrxfrm audionorm "${tmp1}" "${tmp2}"
+
+		# Audio is now normalized in ${tmp2}, which will be used as input
+		#
+		rm -f "${tmp1}"
+		tmp1=''
+
+		# Prepare video FIFO, which will go through the "wire" in YUV format
+		# and spawn the secondary ffmpeg child which will do the decoding.
+		#
+		mkfifo "${vo_fifo}"
+
+		__ffmpeg -sn -an -i "${input}" -y "${vo_fifo}" &
+		vo_pid=$!
+
+		inputs=( -i "${vo_fifo}" -i "${tmp2}" )
+	else
+		inputs=( -i "${input}" )
+	fi
+
+	# Import command line flags, and handle them accordingly
+	#
+	tmp=$(__vr_flag video-track)
+	if [ "${tmp}" ] ; then
+		cmdline=( "${cmdline[@]}" -vid "${tmp}" )
+	fi
+
+	tmp=$(__vr_flag audio-track)
+	if [ "${tmp}" ] ; then
+		cmdline=( "${cmdline[@]}" -aid "${tmp}" )
+	fi
+
+	tmp=$(__vr_flag subtitle-track)
+	if [ "${tmp}" ] ; then
+		cmdline=( "${cmdline[@]}" -sid "${tmp}" )
+	fi
+
+	cmdline=( "${cmdline[@]}" "${inputs[@]}" )
+
+	tmp=$(__vr_flag preset)
+	if [ "${tmp}" ] ; then
+		cmdline=( "${cmdline[@]}" $(__vr_load_preset "${tmp}") )
+	fi
+
+	__ffmpeg "${cmdline[@]}" -y "${output}"
+
+	if __vr_switch normalize-audio
+	then
+		# Clean-up FIFOs and temporary audio file
+		#
+		# XXX Should we check here whether the ffmpeg child is still alive
+		#     by using "kill -0"?  I believe it should not be neccessary,
+		#     but who knows...
+		#
+		rm -f "${vo_fifo}" "${tmp2}"
+	fi
+}
+
+
+vr_run ()
+{
+	local funcname="vr_${a_action}_action"
+
+	if [[ $(type -t "${funcname}") != function ]] ; then
+		die "Action '${a_action}' does not exist"
+	fi
+
+	"${funcname}" "${a_inputs[@]}"
+}
+
+
+vr_parse_args "$@"
+vr_run
+
