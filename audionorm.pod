@@ -11,9 +11,10 @@ B<audionorm> [B<files...>]
 
 =item B<files>
 
-Input files to normalize. Can be OGG Vorbis (extensions I<.ogg> and I<.oga>)
-or MPEG-1 Layer-3 audio (extension I<.mp3>). If not specified, all OGG and
-MP3 files from the working directory will be normalized.
+Input files to normalize. Can be OGG Vorbis (extensions I<.ogg> and I<.oga>),
+MPEG-1 Layer-3 audio (extension I<.mp3>) or MPEG-2 Part-7 audio (extensions
+I<.aac> and I<.m4a>). If not specified, all OGG, AAC and MP3 files from the
+working directory will be normalized.
 
 =back
 

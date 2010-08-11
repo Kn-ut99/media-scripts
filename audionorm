@@ -7,6 +7,11 @@ normalize-mp3 ()
 	mp3gain -m 3 -c -q -r "$1"
 }
 
+normalize-aac ()
+{
+	aacgain -m 3 -c -q -r "$1"
+}
+
 normalize-vorbis ()
 {
 	printf "$1\n"
@@ -20,6 +25,8 @@ normalize-all ()
 	for file in "$@" ; do
 		printf "[1;1m%02i/%02i[1;33m " "$((++current))" "$#"
 		case ${file} in
+			*.[Aa][Aa][Cc]  ) printf "[aac][0;0m " ; normalize-aac    "${file}" ;;
+			*.[Mm]4[Aa]     ) printf "[m4a][0;0m " ; normalize-aac    "${file}" ;;
 			*.[oO][gG][aAgG]) printf "[ogg][0;0m " ; normalize-vorbis "${file}" ;;
 			*.[mM][pP]3     ) printf "[mp3][0;0m " ; normalize-mp3    "${file}" ;;
 			*               ) printf "[   ][0;0m ${file}\n" ;;
@@ -27,7 +34,7 @@ normalize-all ()
 	done
 }
 
-[[ $# -eq 0 ]] && set -- *.[mM][pP]3 *.[oO][gG][gGaA]
+[[ $# -eq 0 ]] && set -- *.[mM][pP]3 *.[oO][gG][gGaA] *.[Aa][Aa][Cc] *.[Mm]4[Aa]
 normalize-all "$@" \
 	| grep -vE '^(No changes to|Applying mp3 gain change of|\.\.\.but tag needs update)'
 
