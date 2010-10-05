@@ -2,14 +2,21 @@
 set -e
 shopt -s nullglob
 
+extra_opts=( )
+
+if [[ $1 = --force ]] ; then
+	extra_opts=( -s r )
+	shift
+fi
+
 normalize-mp3 ()
 {
-	mp3gain -m 3 -c -q -r "$1"
+	mp3gain "${extra_opts[@]}" -m 3 -c -q -r "$1"
 }
 
 normalize-aac ()
 {
-	aacgain -m 3 -c -q -r "$1"
+	aacgain "${extra_opts[@]}" -m 3 -c -q -r "$1"
 }
 
 normalize-vorbis ()

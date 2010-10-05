@@ -2,7 +2,7 @@
 
 =head1 SYNOPSIS
 
-B<audionorm> [B<files...>]
+B<audionorm> [B<--force>] [B<files...>]
 
 
 =head1 OPTIONS AND ARGUMENTS
@@ -30,6 +30,9 @@ when changing from one song to another.
 Scanned files will be modified in-place. This is not a problem since the
 changes made can be reverted in a non-destructive way. Note that audio data
 is I<never> re-encoded.
+
+Passing B<--force> will ignore gain information already stored in the tags
+and re-calculate it.
 
 
 =head1 RETURN VALUE
