@@ -2,6 +2,7 @@
 INSTALL_BIN := \
 	audionorm \
 	ffcut \
+	avchd-encode \
 	moc-notification \
 	h264level41 \
 	vrxfrm

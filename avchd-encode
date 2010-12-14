@@ -1,0 +1,131 @@
+#! /bin/bash
+#
+# If you want to tune this preset are stored at:
+#
+#    /usr/share/ffmpeg/libx264-*.ffpreset
+#
+if [[ $# -lt 3 ]] ; then
+	echo "$(basename "$0"): At least preset, input and output files must be specified"
+	echo "Usage: $(basename "$0") preset output.mp4 input1 [input...]"
+	echo
+	echo "Available presets:"
+	echo "   default - 800x480, H.264 video, MP3 audio - 1 Pass (CBR)"
+	echo "   medium  - 800x480, H.264 video, AAC audio - 2 Pass (VBR)"
+	exit 1
+fi >&2
+
+preset=$1
+output=$2
+shift 2
+
+default_vflag=(
+	-vcodec libx264
+	-vpre default
+	-s 800x480
+	-b 5000k
+)
+
+default_aflag=(
+	-acodec libmp3lame
+	-ab 128k
+)
+
+medium_vflag=(
+	-vcodec libx264
+	-s 800x480
+)
+
+medium_aflag=(
+	-acodec libfaac
+	-aq 100
+)
+
+_vflag=(
+	-deinterlace
+)
+
+_aflag=(
+	-ac 2
+)
+
+
+
+_do ()
+{
+	echo "[1;1m$*[0;0m"
+	"$@"
+}
+
+
+choose_preset ()
+{
+	case $1 in
+		default)
+			_vflag=( "${_vflag[@]}" "${default_vflag[@]}" )
+			_aflag=( "${_aflag[@]}" "${default_aflag[@]}" )
+			;;
+		medium)
+			_vflag=( "${_vflag[@]}" "${medium_vflag[@]}" )
+			_aflag=( "${_aflag[@]}" "${medium_aflag[@]}" )
+            pass=2
+			;;
+        *)
+			echo "Unknown preset '$1'" >&2
+			exit 2
+			;;
+	esac
+}
+
+
+extract_audio ()
+{
+	_do ffmpeg -vn -sn -i - -ar 48000 -ac 2 "$1.audio.temp.wav"
+}
+
+
+normalize_audio ()
+{
+	_do sox -S --norm -t wav "$1.audio.temp.wav" -b 16 -c 2 -t wav "$1.audio.norm.wav"
+	_do rm "$1.audio.temp.wav"
+	_do mv "$1.audio.norm.wav" "$1.audio.wav"
+}
+
+first_pass ()
+{
+    _do ffmpeg \
+        -i - -pass 1 "${_vflag[@]}" -vpre "${preset}"_firstpass \
+        -an -y "${output}"
+}
+
+second_pass ()
+{
+    _do ffmpeg \
+		-i - -pass 2 -i "${output}.audio.wav" \
+		"${_aflag[@]}" "${_vflag[@]}" -vpre "${preset}"\
+		-map 0.0:0.0 -map 1.0:0.1 \
+		-y "${output}"
+}
+
+recode_av ()
+{
+	_do ffmpeg \
+		-i - -i "${output}.audio.wav" \
+		"${_aflag[@]}" "${_vflag[@]}" \
+		-map 0.0:0.0 -map 1.0:0.1 \
+		-y "${output}"
+}
+
+
+choose_preset "${preset}"
+
+if [ ! -r "${output}.audio.wav" ] ; then
+	cat "$@" | extract_audio "${output}"
+	normalize_audio "${output}"
+fi
+
+if [[ -n "${pass}" ]] && [[ "${pass}" == 2 ]]; then
+    cat "$@" | first_pass
+    cat "$@" | second_pass
+else
+    cat "$@" | recode_av
+fi

@@ -1,0 +1,49 @@
+=encoding utf8
+
+=head1 NAME
+
+avchd-encode - Reencode AVCHD video to something useable.
+
+=head1 SYNOPSIS
+
+B<avchd-encode> B<preset> B<output.mp4> B<input> [B<inputs>...]
+
+=head1 OPTIONS AND ARGUMENTS
+
+=over 8
+
+=item B<preset>
+
+Encoding preset. Available presets include:
+
+- I<default>: 800x480, H.264 video, MP3 audio - 1 Pass (CBR)
+- I<medium>: 800x480, H.264 video, AAC audio - 2 Pass (VBR)
+
+=item B<output.mp4>
+
+Output file name. Should end in I<.mp4> extension.
+
+
+=item B<input>
+
+Video input.
+
+
+=item B<inputs>
+
+Additional video inputs to be concatenated. The resulting output video will
+be a concatenation of all inputs passed to the script.
+
+=back
+
+
+=head1 SEE ALSO
+
+L<ffmpeg>
+
+
+=head1 AUTHORS
+
+Carlos López E<lt>clopez@igalia.comE<gt>,
+Adrián Pérez E<lt>aperez@igalia.comE<gt>
+
