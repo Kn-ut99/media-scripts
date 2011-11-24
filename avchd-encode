@@ -4,6 +4,16 @@
 #
 #    /usr/share/ffmpeg/libx264-*.ffpreset
 #
+if [[ -z $(type -P sox) ]] ; then
+	echo "$(basename "$0"): Program 'sox' is not available. Plese install it."
+	exit 2
+fi >&2
+
+if [[ -z $(type -P ffmpeg) ]] ; then
+	echo "$(basename "$0"): Program 'ffmpeg' is not available. Please install it."
+	exit 2
+fi >&2
+
 if [[ $# -lt 3 ]] ; then
 	echo "$(basename "$0"): At least preset, input and output files must be specified"
 	echo "Usage: $(basename "$0") preset output.mp4 input1 [input...]"
