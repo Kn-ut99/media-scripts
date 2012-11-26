@@ -1,141 +1,231 @@
 #! /bin/bash
 #
-# If you want to tune this preset are stored at:
+# Carlos Alberto Lopez Perez <clopez@igalia.com>
+# Adrian Perez <aperez@igalia.com>
 #
-#    /usr/share/ffmpeg/libx264-*.ffpreset
-#
+
+####################################################
+################# ENCODER SETTINGS #################
+####################################################
+
+# Deinterlace and convert FPS to 25
+_vflag=(
+	-vf yadif=0 -r 25
+)
+# Set stereo audio
+_aflag=(
+	-ac 2
+)
+
+# WebM settings http://wiki.webmproject.org/ffmpeg
+# Profiles for WebM are:
+# http://tools.ietf.org/html/draft-bankoski-vp8-bitstream-01#section-9.1
+#	+---------+-------------------------+-------------+
+#	| Version | Reconstruction filter   | Loop filter |
+#	+---------+-------------------------+-------------+
+#	| 0       | Bicubic                 | Normal      |
+#	| 1       | Bilinear                | Simple      |
+#	| 2       | Bilinear                | None        |
+#	| 3       | None                    | None        |
+#	| Other   | Reserved for future use |             |
+#	+---------+-------------------------+-------------+
+
+webm_vflag=(
+	-c:v libvpx
+	-profile:v 0
+	-deadline good
+	-cpu-used 0
+	-qmax 13
+	-g 250
+	-lag-in-frames 25
+	-auto-alt-ref 1
+	-arnr-maxframes 15
+	-arnr-strength 6
+	-arnr-type centered
+)
+webm_aflag=(
+	-c:a libvorbis
+	-q:a 5
+)
+webm_format=webm
+
+# H264 settings http://ffmpeg.org/trac/ffmpeg/wiki/x264EncodingGuide#faq
+# We use baseline profile to optimize for compatibility
+h264_vflag=(
+	-c:v libx264
+	-profile:v baseline
+)
+h264_aflag=(
+	-c:a libfaac
+	-q:a 100
+)
+h264_format=mp4
+
+# Resolution settings
+rflag_1080p=(  -s 1920x1080 )
+rflag_720p=(   -s 1280x720  )
+rflag_360p=(   -s 640x360   )
+
+
+####################################################
+################# PARAMETER CHECKS #################
+####################################################
+
+if [[ $# -lt 4 ]] ; then
+	echo "$(basename "$0"): At least preset, resolution, input and output files must be specified"
+	echo "Usage: $(basename "$0") preset resolution output input1 [input...]"
+	echo
+	echo "Available presets:"
+	echo "  webm   =>   VP8 video,     OGG Vorbis audio,   WebM file format"
+	echo "  h264   =>   H.264 video,   AAC audio,          MP4 file format"
+	echo
+	echo
+	echo "Available resolutions:"
+	echo "  1080p  => 1920x1080  - [16:9] FullHD"
+	echo "  720p   => 1280x720   - [16:9] HD"
+	echo "  360p   => 640×360    - [16:9] Mobile"
+	echo
+	echo "Read the manpage for more information and examples of use."
+	echo "The manpage contains information about possible problems with the codecs."
+	exit 0
+fi >&2
+
 if [[ -z $(type -P sox) ]] ; then
 	echo "$(basename "$0"): Program 'sox' is not available. Plese install it."
 	exit 2
 fi >&2
 
-if [[ -z $(type -P ffmpeg) ]] ; then
-	echo "$(basename "$0"): Program 'ffmpeg' is not available. Please install it."
+# On systems with libav (a ffmpeg fork) installed we default to avconv.
+# Check first for avconv since on Debian libav ships a broken ffmpeg binary.
+
+if ! ffmpeg=$(which avconv) && ! ffmpeg=$(which ffmpeg); then
+	echo "$(basename "$0"): Program 'ffmpeg' is not available (neither the alternative 'avconv')."
+	echo "Please install one of them."
 	exit 2
 fi >&2
 
-if [[ $# -lt 3 ]] ; then
-	echo "$(basename "$0"): At least preset, input and output files must be specified"
-	echo "Usage: $(basename "$0") preset output.mp4 input1 [input...]"
-	echo
-	echo "Available presets:"
-	echo "   default - 800x480, H.264 video, MP3 audio - 1 Pass (CBR)"
-	echo "   medium  - 800x480, H.264 video, AAC audio - 2 Pass (VBR)"
-	exit 1
+preset="${1}"
+resolution="${2}"
+output="${3}"
+shift 3
+
+if [[ -d "${output}" ]]; then
+	echo "Output should be a filename, not a directory."
+	exit 2
 fi >&2
 
-preset=$1
-output=$2
-shift 2
+####################################################
+##################### FUNCTIONS ####################
+####################################################
 
-default_vflag=(
-	-vcodec libx264
-	-vpre default
-	-s 800x480
-	-b 5000k
-)
+get_parameters ()
+{
+	eval preset_vflag="( \${${preset}_vflag[@]} )"  2>/dev/null
+	eval preset_aflag="( \${${preset}_aflag[@]} )"  2>/dev/null
+	eval preset_format="\${${preset}_format}"       2>/dev/null
+	eval rflag="( \${rflag_${resolution}[@]} )"     2>/dev/null
 
-default_aflag=(
-	-acodec libmp3lame
-	-ab 128k
-)
+	if [[ -z "${preset_vflag}" ]] || [[ -z "${preset_aflag}" ]] ||\
+		[[ -z "${preset_format}" ]]; then
+			echo "Unknown preset: ${preset}"
+			exit 2
+	fi >&2
 
-medium_vflag=(
-	-vcodec libx264
-	-s 800x480
-)
-
-medium_aflag=(
-	-acodec libfaac
-	-aq 100
-)
-
-_vflag=(
-	-deinterlace
-)
-
-_aflag=(
-	-ac 2
-)
-
-
+	if [[ -z "${rflag}" ]]; then
+			echo "Unknown resolution: ${resolution}"
+			exit 2
+	fi >&2
+	_vflag=( "${_vflag[@]}" "${preset_vflag[@]}" "${rflag[@]}" )
+	_aflag=( "${_aflag[@]}" "${preset_aflag[@]}" )
+}
 
 _do ()
 {
-	echo "[1;1m$*[0;0m"
-	"$@"
+	echo "[1;1m${*}[0;0m"
+	# Execute with lowest possible priority
+	nice -n19 "$@"
 }
 
-
-choose_preset ()
+_echo ()
 {
-	case $1 in
-		default)
-			_vflag=( "${_vflag[@]}" "${default_vflag[@]}" )
-			_aflag=( "${_aflag[@]}" "${default_aflag[@]}" )
-			;;
-		medium)
-			_vflag=( "${_vflag[@]}" "${medium_vflag[@]}" )
-			_aflag=( "${_aflag[@]}" "${medium_aflag[@]}" )
-            pass=2
-			;;
-        *)
-			echo "Unknown preset '$1'" >&2
-			exit 2
-			;;
-	esac
+    echo -e "\n[1;32m${*}[0;0m\n"
 }
 
+clean_the_house()
+{
+	if [[ -z "${origdir}" ]] || [[ -z "${tempdatadir}" ]]; then
+		echo "Something went really wrong at clean_the_house() ... "
+		exit 1
+	fi
+
+	cd "${origdir}"
+	rm -fr "${tempdatadir}"
+}
 
 extract_audio ()
 {
-	_do ffmpeg -vn -sn -i - -ar 48000 -ac 2 "$1.audio.temp.wav"
+	_do ${ffmpeg} -threads auto -vn -sn -i - -ar 48000 -ac 2 "audio.temp.wav"
 }
-
 
 normalize_audio ()
 {
-	_do sox -S --norm -t wav "$1.audio.temp.wav" -b 16 -c 2 -t wav "$1.audio.norm.wav"
-	_do rm "$1.audio.temp.wav"
-	_do mv "$1.audio.norm.wav" "$1.audio.wav"
+	_do sox --multi-threaded -S --norm \
+		-t wav "audio.temp.wav" -b 16 -c 2 -t wav "audio.norm.wav"
+	rm -f "audio.temp.wav"
+	mv "audio.norm.wav" "audio.wav"
 }
 
 first_pass ()
 {
-    _do ffmpeg \
-        -i - -pass 1 "${_vflag[@]}" -vpre "${preset}"_firstpass \
-        -an -y "${output}"
+	_do ${ffmpeg} -threads auto \
+		-i - -pass 1 -fastfirstpass 1 \
+		-f "${preset_format}" "${_vflag[@]}" \
+		-an -y /dev/null
 }
 
 second_pass ()
 {
-    _do ffmpeg \
-		-i - -pass 2 -i "${output}.audio.wav" \
-		"${_aflag[@]}" "${_vflag[@]}" -vpre "${preset}"\
-		-map 0.0:0.0 -map 1.0:0.1 \
-		-y "${output}"
+	_do ${ffmpeg} -threads auto \
+		-i - -pass 2 -i "audio.wav" \
+		-map 0:v -map 1:a \
+		-f "${preset_format}" \
+		"${_aflag[@]}" "${_vflag[@]}"  \
+		-y "${videoname}"
 }
 
-recode_av ()
-{
-	_do ffmpeg \
-		-i - -i "${output}.audio.wav" \
-		"${_aflag[@]}" "${_vflag[@]}" \
-		-map 0.0:0.0 -map 1.0:0.1 \
-		-y "${output}"
-}
-
-
-choose_preset "${preset}"
-
-if [ ! -r "${output}.audio.wav" ] ; then
-	cat "$@" | extract_audio "${output}"
-	normalize_audio "${output}"
-fi
-
-if [[ -n "${pass}" ]] && [[ "${pass}" == 2 ]]; then
-    cat "$@" | first_pass
-    cat "$@" | second_pass
-else
-    cat "$@" | recode_av
-fi
+####################################################
+####################### MAIN #######################
+####################################################
+get_parameters
+# Take care of everything working as expected
+set -ue -o pipefail
+# We should take care both about full and relative paths
+workingdir=$(readlink -f "$(dirname  "${output}")")
+suffix="${preset}_${resolution}.${preset_format}"
+videoname="$(basename  "${output}")-${suffix}"
+# We create a temporal directory inside the current working dir to write
+# there all the temporaly files. We avoid using $TMPDIR or /tmp because
+# we want to avoid the case were tmpdir is at a different file-system than
+# the destination dir and therefore copying the result video across file
+# system boundaries would take long and will be prone to error (ENOSPC)
+#
+# And we work inside a temporal directory and not under current directory
+# because we want to allow multiples copies of this program to run at the
+# same time, over the same files, without interfering.
+# ffmpeg stores the information about the first pass in the working dir.
+# Also we want to be sure we clean on exit all the ffmpeg temporal files.
+tempdatadir=$(mktemp --tmpdir="${workingdir}" -d .avhcd-encode.XXXXXXXXXX)
+origdir="${PWD}"
+cd "${tempdatadir}"
+# We set a trap to ensure the temporal directory is always cleaned
+trap 'clean_the_house' SIGINT SIGKILL SIGQUIT SIGSEGV SIGPIPE SIGALRM SIGTERM EXIT
+_echo "Extracting audio from the video(s) ... "
+(cd "${origdir}" ; cat "$@") | extract_audio
+_echo "Normalizing audio ... "
+normalize_audio
+_echo "Encoding to \"${videoname}\" => first pass ... "
+(cd "${origdir}" ; cat "$@") | first_pass
+_echo "Encoding to \"${videoname}\" => second pass ... "
+(cd "${origdir}" ; cat "$@") | second_pass
+mv "${videoname}" "${workingdir}"
+_echo "Video succesfully encoded to:\n\t\"${output}-${suffix}\""

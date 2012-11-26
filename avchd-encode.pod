@@ -6,7 +6,7 @@ avchd-encode - Reencode AVCHD video to something useable.
 
 =head1 SYNOPSIS
 
-B<avchd-encode> B<preset> B<output.mp4> B<input> [B<inputs>...]
+B<avchd-encode> B<preset> B<resolution> B<output> B<input> [B<inputs>...]
 
 =head1 OPTIONS AND ARGUMENTS
 
@@ -16,34 +16,123 @@ B<avchd-encode> B<preset> B<output.mp4> B<input> [B<inputs>...]
 
 Encoding preset. Available presets include:
 
-- I<default>: 800x480, H.264 video, MP3 audio - 1 Pass (CBR)
-- I<medium>: 800x480, H.264 video, AAC audio - 2 Pass (VBR)
+- I<webm>: VP8 video,     OGG Vorbis audio,   WebM file format
 
-=item B<output.mp4>
+- I<h264>: H.264 video,   AAC audio,          MP4 file format
 
-Output file name. Should end in I<.mp4> extension.
+WebM is the recommended format for online sharing.
+H.264 works better with old mobile devices.
+
+=item B<resolution>
+
+Encoding resolution. Available resolutions include:
+
+- I<1080p>: 1920x1080  - [16:9] FullHD
+
+- I<720p>:  1280x720   - [16:9] HD
+
+- I<360p>:  640×360    - [16:9] Mobile
+
+=item B<output>
+
+Output file name. Should not include any extension. The script will
+automatically append the right extension.
 
 
 =item B<input>
 
-Video input.
+Path to a file containing the video input.
 
+This script was tested with the AVCHD (*.MTS) files that Sony camcorders
+generate. Concretely it was tested with 1080i Anamorphic, interlaced 50FPS
+video.
+
+You can check what kind of video contains your input files with the command:
+
+          ffmpeg -i input
+
+The AVCHD files for which this script was designed are:
+
+  Video: h264 (High) (HDMV / 0x564D4448), yuv420p, 1440x1080 [SAR 4:3 DAR 16:9]
+         50 fps, 50 tbr, 90k tbn, 50 tbc
+  Audio: ac3 (AC-3 / 0x332D4341), 48000 Hz, stereo, s16, 256 kb/s
+
+
+Anyway this script should work fine with any kind of video input that ffmpeg
+can read. So, even if your input videos don't match this specifications you
+probably will get good results with this script.
 
 =item B<inputs>
 
-Additional video inputs to be concatenated. The resulting output video will
-be a concatenation of all inputs passed to the script.
+Additional filenames containing video inputs to be concatenated.
+The resulting output video will be a concatenation of all inputs passed
+to the script.
 
 =back
+
+=head1 ENCODING
+
+- Video will be deinterlaced and converted to 25 FPS
+
+- Video will be 2-pass encoded to optimize it
+
+- Audio will be normalized with sox
+
+- Both audio and video will be encoded with VBR settings targeting a
+medium/high quality
+
+=head1 EXAMPLES
+
+Encode a video split in 3 MTS to WebM to be shared online:
+
+          avchd-encode webm 720p fosdem-talk 00022.MTS 00023.MTS 00024.MTS
+
+Encode a video split in 2 MTS to be played on your phone:
+
+          avchd-encode h264 360p holidays2012 00006.MTS 0007.MTS
+
+
+=head1 NOTES ABOUT AAC CODEC
+
+- The AAC codec used in this script is libfaac. But due to license issues,
+most binary distributions don't ship ffmpeg with libfaac support.
+
+- This means that if you want to use libfaac, you will have to download the
+libfaac and ffmpeg sources and compile it by your own.
+
+- Another option is to tune the encoding parameters of the h264 profile in
+the script to use some other of the ACC codecs available on your ffmpeg build.
+Check:
+
+          ffmpeg -codecs | grep AAC
+
+- Keep in mind that this script was only tested with libfaac. So switching
+to another AAC encoder may produce unexpected results.
+
+- For Debian/Ubuntu users there are some unofficial multimedia repositories
+that contain ffmpeg built with libfaac support.
+This repositories are deb-multimedia.org for Debian and medibuntu.org for
+Ubuntu.
+
+
+=head1 NOTES ABOUT FFMPEG / LIBAV (AVCONV)
+
+- Libav is a fork of FFmpeg. Some distributions (Debian) ship Libav instead
+of FFmpeg.
+
+- This script will automatically detect which one you have installed
+(ffmpeg or avconv) and will use it.
+
+- The script was more tested with FFmpeg than with Libav (avconv).
+So we recommend to use ffmpeg.
 
 
 =head1 SEE ALSO
 
-L<ffmpeg>
+L<ffmpeg>, L<avconv>, L<sox>
 
 
 =head1 AUTHORS
 
-Carlos López E<lt>clopez@igalia.comE<gt>,
+Carlos Alberto Lopez Perez E<lt>clopez@igalia.comE<gt>,
 Adrián Pérez E<lt>aperez@igalia.comE<gt>
-
