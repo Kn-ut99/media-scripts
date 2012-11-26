@@ -129,7 +129,7 @@ So we recommend to use ffmpeg.
 
 =head1 SEE ALSO
 
-L<ffmpeg>, L<avconv>, L<sox>
+L<ffmpeg>, L<avconv>, L<sox>, L<qt-faststart>, L<mkclean>
 
 
 =head1 AUTHORS
