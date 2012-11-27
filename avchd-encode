@@ -29,13 +29,18 @@ _aflag=(
 #	| 3       | None                    | None        |
 #	| Other   | Reserved for future use |             |
 #	+---------+-------------------------+-------------+
-
+#
+# The parameter that most influences quality/size ratio is qmax.
+# qmax can be [0-63]. Being 0 the best quality and 63 the worst.
+# I have empirically tested that [25-30] gives a good balance between final
+# quality and video size. Lower numbers only seems to produce bigger
+# videos without improving the quality in a noticeable way.
 webm_vflag=(
 	-c:v libvpx
 	-profile:v 0
 	-deadline good
 	-cpu-used 0
-	-qmax 13
+	-qmax 28
 	-g 250
 	-lag-in-frames 25
 	-auto-alt-ref 1
