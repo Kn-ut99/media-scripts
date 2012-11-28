@@ -40,7 +40,7 @@ webm_vflag=(
 	-profile:v 0
 	-deadline good
 	-cpu-used 0
-	-qmax 28
+	-qmax 25
 	-g 250
 	-lag-in-frames 25
 	-auto-alt-ref 1
