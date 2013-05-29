@@ -185,7 +185,8 @@ extract_audio ()
 normalize_audio ()
 {
 	_do sox --multi-threaded -S --norm \
-		-t wav "audio.temp.wav" -b 16 -c 2 -t wav "audio.norm.wav"
+		-t wav "audio.temp.wav" -b 16 -c 2 -t wav "audio.norm.wav" \
+		--temp sox
 	rm -f "audio.temp.wav"
 	mv "audio.norm.wav" "audio.wav"
 }
@@ -232,6 +233,7 @@ videoname="$(basename  "${output}")-${suffix}"
 tempdatadir=$(mktemp --tmpdir="${workingdir}" -d .avhcd-encode.XXXXXXXXXX)
 origdir="${PWD}"
 cd "${tempdatadir}"
+mkdir sox
 # We set a trap to ensure the temporal directory is always cleaned
 trap 'clean_the_house' SIGINT SIGKILL SIGQUIT SIGSEGV SIGPIPE SIGALRM SIGTERM EXIT
 _echog "Extracting audio from the video(s) ... "
