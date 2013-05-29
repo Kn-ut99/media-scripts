@@ -1,0 +1,16 @@
+Source: media-scripts
+Section: video
+Priority: extra
+Maintainer: Carlos Alberto Lopez Perez <clopez@igalia.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.4
+Homepage: https://github.com/clopez/media-scripts
+Vcs-Git: git://github.com/clopez/media-scripts.git
+Vcs-Browser: https://github.com/clopez/media-scripts
+
+Package: media-scripts
+Architecture: all
+Depends: python (>= 2.6), ${misc:Depends}
+Recommends: ffmpeg, sox
+Description: scripts to create and modify multimedia files.
+ Multimedia-related scripts -- use at your own risk :-)
