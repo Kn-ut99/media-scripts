@@ -17,7 +17,8 @@ case ${MocState} in
 	*    ) exit 0 ;;
 esac
 
-exec notify-send              \
+exec notify-send              	\
+	--hint=int:transient:1	\
 	--expire-time=5000          \
 	--icon=gnome-volume-control \
 	"${stat}: ${MocSongTitle}"  \
